@@ -78,16 +78,73 @@ router.post("/", async (req, res) => {
   }
 });
 
-// router.post("/", (req, res) => {
-//     const { title, contents } = req.body;
-//     if (!title || !contents) {
-//         res.status(400).json({
-//             errorMessage: "Please provide title and contents for the post."
-//           })
-//     } else {
+router.post("/:id/comments", (req, res) => {
+  const { text, post_id } = req.body;
+  //   const newComment = Db.findCommentsById(result);
+  if (!text) {
+    res
+      .status(400)
+      .json({ errorMessage: "Please provide text for the comment." });
+  }
+  if (!post_id) {
+    res
+      .status(404)
+      .json({ message: "The post with the specified ID does not exist." });
+  } else {
+    Db.insertComment(req.body)
+      .then(result => {
+        res.status(201).json(result);
+      })
+      .catch(error => {
+        res.status(500).json({
+          error: "There was an error while saving the comment to the database"
+        });
+      });
+  }
+});
 
-//     }
+//Deleting a post by ID
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
 
-// });
+  try {
+    const count = await Db.remove(id);
+    const posts = await Db.find();
+    if (count > 0) {
+      res.status(200).json(posts);
+    } else {
+      res
+        .status(404)
+        .json({ message: "The post with the specified ID does not exist." });
+    }
+  } catch (error) {
+    // log error to database
+    console.log(error);
+    res.status(500).json({ error: "The post could not be removed" });
+  }
+});
+
+//Updating the post information
+router.put("/:id", async (req, res) => {
+  //   const { id } = req.params.id;
+  const updatedPost = await Db.findById(req.params.id);
+  try {
+    const updated = await Db.update(req.params.id, req.body);
+    if (!updated) {
+      res
+        .status(404)
+        .json({ message: "The post with the specified ID does not exist." });
+    }
+    if (updated) {
+      res.status(200).json(updatedPost);
+    }
+  } catch (error) {
+    // log error to database
+    console.log(error);
+    res
+      .status(500)
+      .json({ error: "The post information could not be modified." });
+  }
+});
 
 module.exports = router;
